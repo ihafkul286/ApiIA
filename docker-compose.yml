@@ -1,0 +1,39 @@
+  services:
+
+    api:
+      build: .
+      container_name: api-reservas
+      restart: always
+      ports:
+        - "8080:8082"
+
+      environment:
+        SPRING_DATASOURCE_URL: jdbc:mysql://interchange.proxy.rlwy.net:49593/railway?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8
+        SPRING_DATASOURCE_USERNAME: root
+        SPRING_DATASOURCE_PASSWORD: GgrLiqOSDsdUoxoAHpdoutjgCpGoVZEn
+      networks:
+        - reservas-net
+
+    phpmyadmin:
+      image: phpmyadmin/phpmyadmin
+      container_name: phpmyadmin
+      restart: always
+
+      ports:
+        - "8081:80"
+      environment:
+        PMA_HOST: interchange.proxy.rlwy.net
+        PMA_PORT: 49593
+        PMA_USER: root
+        PMA_PASSWORD: GgrLiqOSDsdUoxoAHpdoutjgCpGoVZEn
+      networks:
+        - reservas-net
+
+  volumes:
+    n8n_data:
+
+  networks:
+    reservas-net:
+      driver: bridge
+
+
