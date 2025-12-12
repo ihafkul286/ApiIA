@@ -19,13 +19,11 @@ public class ReservaController {
         this.reservaRepository = reservaRepository;
     }
 
-    // 1. Obtener todas las reservas
     @GetMapping
     public List<Reserva> getAllReservas() {
         return reservaRepository.findAll();
     }
 
-    // 2. Obtener una reserva por ID
     @GetMapping("/{id}")
     public ResponseEntity<Reserva> getReservaById(@PathVariable Long id) {
         Optional<Reserva> reserva = reservaRepository.findById(id);
@@ -33,28 +31,48 @@ public class ReservaController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // 3. Crear una nueva reserva
     @PostMapping
     public Reserva createReserva(@RequestBody Reserva reserva) {
         return reservaRepository.save(reserva);
     }
 
-    // 4. Actualizar una reserva existente
     @PutMapping("/{id}")
-    public ResponseEntity<Reserva> updateReserva(@PathVariable Long id, @RequestBody Reserva detallesReserva) {
+    public ResponseEntity<?> updateReserva(@PathVariable Long id, @RequestBody Reserva detallesReserva) {
         return reservaRepository.findById(id)
-                .map(reserva -> {
-                    reserva.setNombre(detallesReserva.getNombre());
-                    reserva.setTelefono(detallesReserva.getTelefono());
-                    reserva.setFecha(detallesReserva.getFecha());
-                    reserva.setHora(detallesReserva.getHora());
-                    reserva.setServicio(detallesReserva.getServicio());
-                    return ResponseEntity.ok(reservaRepository.save(reserva));
+                .map(existing -> {
+                    final int DURATION_MINUTES = 30;
+
+                    LocalDate newDate = detallesReserva.getFecha();
+                    java.time.LocalTime newTime = detallesReserva.getHora();
+                    java.time.LocalDateTime newStart = java.time.LocalDateTime.of(newDate, newTime);
+                    java.time.LocalDateTime newEnd = newStart.plusMinutes(DURATION_MINUTES);
+
+                    List<Reserva> reservasMismoDia = reservaRepository.findByFecha(newDate);
+
+                    boolean conflict = reservasMismoDia.stream()
+                            .filter(r -> !r.getId().equals(id))
+                            .map(r -> java.time.LocalDateTime.of(r.getFecha(), r.getHora()))
+                            .anyMatch(existingStart -> {
+                                java.time.LocalDateTime existingEnd = existingStart.plusMinutes(DURATION_MINUTES);
+                                return newStart.isBefore(existingEnd) && newEnd.isAfter(existingStart);
+                            });
+
+                    if (conflict) {
+                        return ResponseEntity.status(409).body("La franja no está disponible");
+                    }
+
+                    existing.setNombre(detallesReserva.getNombre());
+                    existing.setTelefono(detallesReserva.getTelefono());
+                    existing.setFecha(detallesReserva.getFecha());
+                    existing.setHora(detallesReserva.getHora());
+                    existing.setServicio(detallesReserva.getServicio());
+                    Reserva saved = reservaRepository.save(existing);
+                    return ResponseEntity.ok(saved);
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // 5. Eliminar una reserva específica
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteReserva(@PathVariable Long id) {
         return reservaRepository.findById(id)
@@ -65,7 +83,6 @@ public class ReservaController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // 6. Eliminar todas las reservas
     @DeleteMapping(value = "/all", consumes = "*/*")
     public ResponseEntity<Void> deleteAllReservas() {
         reservaRepository.deleteAll();

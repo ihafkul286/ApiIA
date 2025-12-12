@@ -3,14 +3,19 @@ package com.example.ApiReservas.model;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.LocalDateTime;
+import java.util.Map;
 
 @Entity
 @Table(name = "citas")
 @Getter @Setter
+@NoArgsConstructor
 public class Reserva {
 
     @Id
@@ -26,7 +31,47 @@ public class Reserva {
     @Column(name = "created_at", updatable = false, insertable = false)
     private Timestamp createdAt;
 
-    public Reserva() {
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+
+    private static final Map<String, Integer> SERVICE_DURATIONS = Map.of(
+            "Limpieza dental profesional", 30,
+            "Blanqueamiento dental", 45,
+            "Consulta general", 15,
+            "Colocación de brackets metálicos", 60,
+            "Brackets estéticos", 60,
+            "Alineadores invisibles", 60,
+            "Ortodoncia preventiva", 30,
+            "Ortodoncia correctiva", 45,
+            "Ortodoncia acelerada", 45
+    );
+
+
+    @JsonProperty("start_at")
+    public LocalDateTime getStartAtTime() {
+        if (fecha == null || hora == null) {
+            return null;
+        }
+        return LocalDateTime.of(fecha, hora);
+    }
+
+
+    @JsonProperty("end_at")
+    public LocalDateTime getEndAtTime() {
+        LocalDateTime startAt = getStartAtTime();
+        if (startAt == null) {
+            return null;
+        }
+
+        int durationMinutes = SERVICE_DURATIONS.getOrDefault(this.servicio, 30);
+
+        return startAt.plusMinutes(durationMinutes);
     }
 
     public Reserva(Long id, String nombre,  String telefono, LocalDate fecha, LocalTime hora, String servicio) {
@@ -38,14 +83,6 @@ public class Reserva {
         this.servicio = servicio;
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
     public String getNombre() {
         return nombre;
     }
@@ -53,8 +90,6 @@ public class Reserva {
     public void setNombre(String nombre) {
         this.nombre = nombre;
     }
-
-
 
     public String getTelefono() {
         return telefono;
@@ -101,5 +136,4 @@ public class Reserva {
         this.createdAt = new Timestamp(System.currentTimeMillis());
     }
 }
-
 
