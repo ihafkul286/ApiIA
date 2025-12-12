@@ -5,7 +5,7 @@
       container_name: api-reservas
       restart: always
       ports:
-        - "8080:8082"
+        - "10000:8082"
 
       environment:
         SPRING_DATASOURCE_URL: jdbc:mysql://interchange.proxy.rlwy.net:49593/railway?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8
